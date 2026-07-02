@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}User Management | AKASH HRM{% endblock %}
+{% block content %}
+<section class="toolbar-band">
+  <div>
+    <h1>User Management</h1>
+    <p>Control administration privileges for all registered portal users</p>
+  </div>
+</section>
+
+<nav class="admin-tabs" style="margin-top: 24px; margin-bottom: 24px;">
+  {% if current_user.is_admin or current_user.is_service_admin %}
+  <a href="{{ url_for('main.settings_index') }}" class="admin-tab">⚙️ Settings & Branding</a>
+  {% endif %}
+  {% if current_user.is_admin or current_user.is_directory_admin %}
+  <a href="{{ url_for('main.employee_new') }}" class="admin-tab">👤 Add Employee</a>
+  {% endif %}
+  {% if current_user.is_admin %}
+  <a href="{{ url_for('main.user_index') }}" class="admin-tab active">👥 Users Management</a>
+  {% endif %}
+  {% if current_user.is_admin or current_user.is_directory_admin %}
+  <a href="{{ url_for('main.department_index') }}" class="admin-tab">🏢 Departments Management</a>
+  {% endif %}
+  {% if current_user.is_admin or current_user.is_audit_admin %}
+  <a href="{{ url_for('main.audit_log') }}" class="admin-tab">📜 Audit Logs</a>
+  {% endif %}
+</nav>
+
+<!-- Administrative Roles Legend -->
+<div style="background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px 24px; margin-bottom: 24px; text-align: left;">
+  <h2 style="font-size: 13px; font-weight: 800; margin: 0 0 10px 0; color: var(--ink); border-bottom: 1px solid var(--line); padding-bottom: 8px;">ℹ️ Administrative Role Capabilities</h2>
+  <ul style="margin: 0; padding-left: 20px; font-size: 12px; line-height: 1.6; color: var(--muted); display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px;">
+    <li>👑 <strong>Super Admin</strong>: Full administrative privileges. Manage users, SSO accounts, and edit any permission roles.</li>
+    <li>🏢 <strong>Directory Admin</strong>: Manage contact details records (add/edit/delete employees, toggle active state) and company departments.</li>
+    <li>⚙️ <strong>Services Admin</strong>: Manage internal services platform cards (add/edit/delete link metadata) and visibility panel settings.</li>
+    <li>🎫 <strong>Support Admin</strong>: Handle support ticketing portal (view dashboard queues, change status/priority, assign ticket, reply to requests).</li>
+    <li>📜 <strong>Audit Admin</strong>: View logs tracking all changes and administrative audit operations.</li>
+    <li>📋 <strong>Clearance Admin</strong>: Manage technology clearance flow — configure initiators, approvers, and track all clearance requests and history.</li>
+    <li>⏰ <strong>Reminder Admin</strong>: Full expiration reminders management — create/edit reminders, configure notification thresholds, custom dropdowns, bulk imports.</li>
+    <li>👁️ <strong>Reminder Viewer</strong>: Read-only access to expiration reminders listing.</li>
+  </ul>
+</div>
+
+<div class="table-panel">
+  <table class="audit-table">
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Groups</th>
+        <th>Last Login</th>
+        <th>Role</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td><strong>{{ u.username or "-" }}</strong></td>
+        <td>{{ u.email or "-" }}</td>
+        <td>
+          {% for group in u.groups %}
+          <span class="id-pill" style="margin-right: 4px;">{{ group }}</span>
+          {% else %}
+          -
+          {% endfor %}
+        </td>
+        <td>{{ u.last_login_at.strftime('%Y-%m-%d %H:%M') if u.last_login_at else "-" }}</td>
+        <td>
+          <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+            {% if u.is_admin %}
+            <span class="id-pill active" style="background-color: var(--amber); color: #fff;">Super Admin</span>
+            {% endif %}
+            {% if u.is_directory_admin %}
+            <span class="id-pill active" style="background-color: var(--blue); color: #fff;">Directory Admin</span>
+            {% endif %}
+            {% if u.is_service_admin %}
+            <span class="id-pill active" style="background-color: var(--cyan); color: #fff;">Services Admin</span>
+            {% endif %}
+            {% if u.is_support_admin %}
+            <span class="id-pill active" style="background-color: var(--purple); color: #fff;">Support Admin</span>
+            {% endif %}
+            {% if u.is_audit_admin %}
+            <span class="id-pill active" style="background-color: var(--muted); color: #fff;">Audit Admin</span>
+            {% endif %}
+            {% if u.is_clearance_admin %}
+            <span class="id-pill active" style="background-color: #6f42c1; color: #fff;">Clearance Admin</span>
+            {% endif %}
+            {% if u.is_reminder_admin %}
+            <span class="id-pill active" style="background-color: #fd7e14; color: #fff;">Reminder Admin</span>
+            {% endif %}
+            {% if u.is_reminder_viewer %}
+            <span class="id-pill active" style="background-color: #20c997; color: #fff;">Reminder Viewer</span>
+            {% endif %}
+            {% if not u.is_any_admin %}
+            <span class="id-pill" style="background-color: #e1edf6; color: var(--blue);">Regular User</span>
+            {% endif %}
+          </div>
+        </td>
+        <td>
+          {% if u.id == current_user.id %}
+          <span style="font-size: 12.5px; font-style: italic; color: var(--muted);">Self account roles cannot be edited.</span>
+          {% else %}
+          <form method="post" action="{{ url_for('main.user_save_roles', user_id=u.id) }}" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; max-width: 480px;">
+            {{ csrf_field() }}
+            <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; cursor: pointer; color: var(--amber);">
+              <input type="checkbox" name="is_admin" value="1" {% if u.is_admin %}checked{% endif %} style="width: 14px; height: 14px; accent-color: var(--amber);">
+              Super Admin
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; cursor: pointer; color: var(--blue);">
+              <input type="checkbox" name="is_directory_admin" value="1" {% if u.is_directory_admin %}checked{% endif %} style="width: 14px; height: 14px; accent-color: var(--blue);">
+              Directory Admin
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; cursor: pointer; color: var(--cyan);">
+              <input type="checkbox" name="is_service_admin" value="1" {% if u.is_service_admin %}checked{% endif %} style="width: 14px; height: 14px; accent-color: var(--cyan);">
+              Services Admin
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; cursor: pointer; color: var(--purple);">
+              <input type="checkbox" name="is_support_admin" value="1" {% if u.is_support_admin %}checked{% endif %} style="width: 14px; height: 14px; accent-color: var(--purple);">
+              Support Admin
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; cursor: pointer; color: var(--muted);">
+              <input type="checkbox" name="is_audit_admin" value="1" {% if u.is_audit_admin %}checked{% endif %} style="width: 14px; height: 14px; accent-color: var(--muted);">
+              Audit Admin
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; cursor: pointer; color: #6f42c1;">
+              <input type="checkbox" name="is_clearance_admin" value="1" {% if u.is_clearance_admin %}checked{% endif %} style="width: 14px; height: 14px; accent-color: #6f42c1;">
+              Clearance Admin
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; cursor: pointer; color: #fd7e14;">
+              <input type="checkbox" name="is_reminder_admin" value="1" {% if u.is_reminder_admin %}checked{% endif %} style="width: 14px; height: 14px; accent-color: #fd7e14;">
+              Reminder Admin
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; cursor: pointer; color: #20c997;">
+              <input type="checkbox" name="is_reminder_viewer" value="1" {% if u.is_reminder_viewer %}checked{% endif %} style="width: 14px; height: 14px; accent-color: #20c997;">
+              Reminder Viewer
+            </label>
+            <button class="primary-action" type="submit" style="padding: 4px 10px; font-size: 11px; min-height: unset; height: 26px; margin: 0;">Save</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="6" class="empty-state">No registered users found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
