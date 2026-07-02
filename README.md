@@ -11,14 +11,14 @@ If you want to adapt this portal for other projects or change system configurati
 ### 1. Remote Server & SSO Deployment Configs
 * **File to edit**: [deploy_remote.py](file:///c:/Users/user/OneDrive%20-%20%20Digital%20TV/Documents/Create%20HRM%20portal%20sso%20with%20authentik/deploy_remote.py)
 * **What to change**:
-  - `HOST` (Line 10): Target host IP address (`192.168.151.59`).
+  - `HOST` (Line 10): Target host IP address (`192.168.*.*`).
   - `REDIRECT_URI` (Line 19): Callback URL for authentication redirect.
   - `APP_NAME` (Line 16) & `PROVIDER_NAME` (Line 18): Rebrand the SSO details.
 
 ### 2. SMTP & Email Server Settings
 * **File to edit**: `.env` (generated dynamically on deploy) or [app/utils.py](file:///c:/Users/user/OneDrive%20-%20%20Digital%20TV/Documents/Create%20HRM%20portal%20sso%20with%20authentik/app/utils.py)
 * **What to change**:
-  - Update SMTP server IP (`192.168.151.76`), port (`25`), and sender email address (`employee.portal@dth.com`) to connect to your local mail server.
+  - Update SMTP server IP (`192.168.*.*`), port (`25`), and sender email address (`employee.portal@mail.com`) to connect to your local mail server.
 
 ### 3. Adding/Modifying Database Models
 * **File to edit**: [app/models.py](file:///c:/Users/user/OneDrive%20-%20%20Digital%20TV/Documents/Create%20HRM%20portal%20sso%20with%20authentik/app/models.py)
