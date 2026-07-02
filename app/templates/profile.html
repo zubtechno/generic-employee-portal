@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Profile | AKASH HRM{% endblock %}
+{% block content %}
+<section class="toolbar-band">
+  <div>
+    <h1>{{ current_user.display_name }}</h1>
+    <p>{{ current_user.email }} · {{ "Admin" if current_user.is_admin else "User" }}</p>
+  </div>
+</section>
+
+{% if employee %}
+<section class="detail-layout">
+  <aside class="profile-panel">
+    <img class="profile-photo" src="{{ url_for('static', filename=employee|photo_path) }}" alt="{{ employee.full_name }}">
+    <h1>{{ employee.full_name }}</h1>
+    <p>{{ employee.designation or "Designation pending" }}</p>
+    <span class="id-pill large">{{ employee.employee_id }}</span>
+    <form class="photo-form" method="post" enctype="multipart/form-data" action="{{ url_for('main.employee_photo', employee_id=employee.employee_id) }}">
+      {{ csrf_field() }}
+      <label class="file-field">
+        <span data-lucide="image-up"></span>
+        <span>Update Photo</span>
+        <input name="photo" type="file" accept="image/*" required>
+      </label>
+      <button class="secondary-action wide" type="submit">Save Photo</button>
+    </form>
+    
+    <!-- Ticket Stats Section -->
+    <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); text-align: left;">
+      <h3 style="font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">🎫 Support Ticket Statistics</h3>
+      <div style="display: grid; grid-template-columns: {% if current_user.is_admin %}1fr 1fr{% else %}1fr{% endif %}; gap: 10px;">
+        <div style="background: var(--page); border: 1px solid var(--line); border-radius: 8px; padding: 12px 10px; text-align: center;">
+          <span style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 2px;">Created</span>
+          <strong style="font-size: 18px; color: var(--blue);">{{ tickets_created }}</strong>
+        </div>
+        {% if current_user.is_admin %}
+        <div style="background: var(--page); border: 1px solid var(--line); border-radius: 8px; padding: 12px 10px; text-align: center;">
+          <span style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 2px;">Closed</span>
+          <strong style="font-size: 18px; color: #15803d;">{{ tickets_closed }}</strong>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </aside>
+  <section class="detail-content">
+    <div class="section-heading">
+      <h2>Linked Employee Record</h2>
+      <a class="secondary-action" href="{{ url_for('main.employee_detail', employee_id=employee.employee_id) }}">Open Directory Profile</a>
+    </div>
+    <dl class="detail-grid">
+      <div><dt>Department</dt><dd>{{ employee.department or "-" }}</dd></div>
+      <div><dt>Mobile</dt><dd>{{ employee.phone or "-" }}</dd></div>
+      <div><dt>Extension</dt><dd>{{ employee.extension or "-" }}</dd></div>
+      <div class="wide"><dt>Email</dt><dd>{{ employee.email or "-" }}</dd></div>
+    </dl>
+  </section>
+</section>
+{% else %}
+<section class="empty-state" style="max-width: 480px; margin: 0 auto; padding: 32px 24px; text-align: center;">
+  <h2>No linked employee record</h2>
+  <p style="margin-bottom: 24px;">Your SSO email does not match an employee email yet.</p>
+  
+  <div style="background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 20px; text-align: left; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+    <h3 style="font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">🎫 Support Ticket Statistics</h3>
+    <div style="display: grid; grid-template-columns: {% if current_user.is_admin %}1fr 1fr{% else %}1fr{% endif %}; gap: 10px;">
+      <div style="background: var(--page); border: 1px solid var(--line); border-radius: 8px; padding: 12px 10px; text-align: center;">
+        <span style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 2px;">Created</span>
+        <strong style="font-size: 18px; color: var(--blue);">{{ tickets_created }}</strong>
+      </div>
+      {% if current_user.is_admin %}
+      <div style="background: var(--page); border: 1px solid var(--line); border-radius: 8px; padding: 12px 10px; text-align: center;">
+        <span style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 2px;">Closed</span>
+        <strong style="font-size: 18px; color: #15803d;">{{ tickets_closed }}</strong>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
