@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}Department Management | AKASH HRM{% endblock %}
+{% block content %}
+<section class="toolbar-band">
+  <div>
+    <h1>Department Management</h1>
+    <p>Configure company departments, sub-departments, and their display order (serial)</p>
+  </div>
+</section>
+
+<nav class="admin-tabs" style="margin-top: 24px; margin-bottom: 24px;">
+  {% if current_user.is_admin or current_user.is_service_admin %}
+  <a href="{{ url_for('main.settings_index') }}" class="admin-tab">⚙️ Settings & Branding</a>
+  {% endif %}
+  {% if current_user.is_admin or current_user.is_directory_admin %}
+  <a href="{{ url_for('main.employee_new') }}" class="admin-tab">👤 Add Employee</a>
+  {% endif %}
+  {% if current_user.is_admin %}
+  <a href="{{ url_for('main.user_index') }}" class="admin-tab">👥 Users Management</a>
+  {% endif %}
+  {% if current_user.is_admin or current_user.is_directory_admin %}
+  <a href="{{ url_for('main.department_index') }}" class="admin-tab active">🏢 Departments Management</a>
+  {% endif %}
+  {% if current_user.is_admin or current_user.is_audit_admin %}
+  <a href="{{ url_for('main.audit_log') }}" class="admin-tab">📜 Audit Logs</a>
+  {% endif %}
+</nav>
+
+<div class="directory-layout">
+  <!-- Left column: Departments List inside a Single Form -->
+  <main class="directory-main" style="gap: 24px;">
+    <form method="post" action="{{ url_for('main.departments_save_all') }}" style="width: 100%; display: grid; gap: 24px;">
+      {{ csrf_field() }}
+      
+      {% for main_dept in main_depts %}
+      <div class="dept-section" style="background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); width: 100%;">
+        
+        <!-- Main Department Form Row -->
+        <div style="display: flex; gap: 12px; align-items: center; border-bottom: 1.5px solid var(--line); padding-bottom: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 200px;">
+            <input name="name_{{ main_dept.id }}" value="{{ main_dept.name }}" placeholder="Department Name" required style="font-weight: 800; font-size: 15px; color: var(--blue);">
+          </div>
+          <div style="width: 100px;">
+            <input name="serial_no_{{ main_dept.id }}" type="number" value="{{ main_dept.serial_no }}" placeholder="Serial" required title="Department Serial / Order">
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button type="submit" name="delete_id" value="{{ main_dept.id }}" class="secondary-action" onclick="return confirm('Are you sure you want to delete this department and all of its sub-departments?');" style="color: var(--red); border-color: var(--red); padding: 8px 12px; min-height: 38px;">Delete</button>
+          </div>
+        </div>
+        
+        <!-- Draggable Sub Departments List -->
+        <div style="margin-left: 24px; display: grid; gap: 12px; border-left: 2px solid var(--line); padding-left: 16px;">
+          <h3 style="font-size: 11px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; letter-spacing: 0.5px;">Sub Departments (Drag to Reorder)</h3>
+          
+          <div class="sub-depts-list" data-parent-id="{{ main_dept.id }}" style="display: grid; gap: 10px;">
+            {% for sub in main_dept.sub_departments %}
+            <div class="sub-dept-row" data-id="{{ sub.id }}" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: #f8fbfd; padding: 10px; border-radius: 6px; border: 1px dashed var(--line); cursor: grab; transition: background 0.2s ease;">
+              <span data-lucide="grip-vertical" style="color: var(--muted); width: 16px; height: 16px; flex-shrink: 0; cursor: grab;"></span>
+              
+              <div style="flex: 1; min-width: 180px;">
+                <input name="name_{{ sub.id }}" value="{{ sub.name }}" placeholder="Sub-department Name" required style="font-weight: 600; font-size: 13.5px; background: #fff;">
+              </div>
+              
+              <div style="width: 180px;">
+                <select name="parent_id_{{ sub.id }}" style="min-height: 38px; padding: 6px 10px; background: #fff;">
+                  {% for d in main_depts %}
+                  <option value="{{ d.id }}" {% if d.id == sub.parent_id %}selected{% endif %}>{{ d.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              
+              <div style="width: 80px;">
+                <input name="serial_no_{{ sub.id }}" class="serial-input" type="number" value="{{ sub.serial_no }}" required title="Sub-department Serial" style="background: #fff;">
+              </div>
+              
+              <div>
+                <button type="submit" name="delete_id" value="{{ sub.id }}" class="secondary-action" onclick="return confirm('Are you sure you want to delete this sub-department?');" style="color: var(--red); border-color: var(--red); padding: 6px 12px; min-height: 36px; font-size: 12.5px; background: #fff;">Delete</button>
+              </div>
+            </div>
+            {% else %}
+            <p class="no-subs-msg" style="font-size: 13px; color: var(--muted); font-style: italic; margin: 0;">No sub-departments under this branch.</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <h2>No departments configured.</h2>
+      </div>
+      {% endfor %}
+      
+      <!-- Single Global Save Button at Bottom -->
+      {% if main_depts %}
+      <div style="margin-top: 12px; display: flex; justify-content: flex-end; position: sticky; bottom: 20px; z-index: 10;">
+        <button class="primary-action" type="submit" style="padding: 12px 28px; font-size: 14px; font-weight: 800; box-shadow: 0 10px 24px rgba(0, 145, 216, 0.22); min-height: 48px;">
+          <span data-lucide="save"></span>
+          <span>Save Changes</span>
+        </button>
+      </div>
+      {% endif %}
+    </form>
+  </main>
+
+  <!-- Right column: Add New Department Form -->
+  <aside class="directory-sidebar" style="position: sticky; top: 90px; max-height: none; overflow: visible;">
+    <div class="sidebar-header" style="margin-bottom: 12px;">
+      <h2>Add Department</h2>
+    </div>
+    <form method="post" action="{{ url_for('main.department_create') }}" style="display: grid; gap: 14px;">
+      {{ csrf_field() }}
+      <label>
+        Department Name
+        <input name="name" placeholder="e.g. Sales, Marketing" required style="min-height: 38px;">
+      </label>
+      
+      <label>
+        Parent Department (Optional)
+        <select name="parent_id" style="min-height: 38px;">
+          <option value="">-- None (Create Main Department) --</option>
+          {% for d in main_depts %}
+          <option value="{{ d.id }}">{{ d.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      
+      <label>
+        Serial / Display Order
+        <input name="serial_no" type="number" value="1" required style="min-height: 38px;">
+      </label>
+      
+      <button class="primary-action wide" type="submit" style="margin-top: 6px;">
+        <span data-lucide="plus"></span>
+        <span>Add Department</span>
+      </button>
+    </form>
+  </aside>
+</div>
+
+<!-- Include SortableJS for Drag and Drop Reordering -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Sortable on each sub-departments container
+    document.querySelectorAll('.sub-depts-list').forEach(function(listEl) {
+      new Sortable(listEl, {
+        group: 'sub-departments', // Allows dragging between departments as well!
+        animation: 150,
+        handle: '[data-lucide="grip-vertical"]', // Drag handle
+        ghostClass: 'sortable-ghost',
+        onEnd: function(evt) {
+          // 1. Update the parent_id select field value if moved between main departments
+          var targetParentId = evt.to.getAttribute('data-parent-id');
+          var draggedRow = evt.item;
+          var parentSelect = draggedRow.querySelector('select[name^="parent_id_"]');
+          if (parentSelect && targetParentId) {
+            parentSelect.value = targetParentId;
+          }
+
+          // 2. Re-calculate serial numbers inside the source container
+          evt.from.querySelectorAll('.sub-dept-row').forEach(function(row, index) {
+            var serialInput = row.querySelector('.serial-input');
+            if (serialInput) {
+              serialInput.value = index + 1;
+            }
+          });
+
+          // 3. Re-calculate serial numbers inside the target container (if different)
+          if (evt.to !== evt.from) {
+            evt.to.querySelectorAll('.sub-dept-row').forEach(function(row, index) {
+              var serialInput = row.querySelector('.serial-input');
+              if (serialInput) {
+                serialInput.value = index + 1;
+              }
+            });
+
+            // Toggle empty state labels
+            toggleEmptyStateMsg(evt.from);
+            toggleEmptyStateMsg(evt.to);
+          }
+        }
+      });
+    });
+
+    function toggleEmptyStateMsg(container) {
+      var rows = container.querySelectorAll('.sub-dept-row');
+      var msg = container.querySelector('.no-subs-msg');
+      if (rows.length === 0) {
+        if (!msg) {
+          var p = document.createElement('p');
+          p.className = 'no-subs-msg';
+          p.style.fontSize = '13px';
+          p.style.color = 'var(--muted)';
+          p.style.fontStyle = 'italic';
+          p.style.margin = '0';
+          p.textContent = 'No sub-departments under this branch.';
+          container.appendChild(p);
+        }
+      } else {
+        if (msg) {
+          msg.remove();
+        }
+      }
+    }
+  });
+</script>
+
+<style>
+  .sortable-ghost {
+    opacity: 0.4;
+    background: #edf5fb !important;
+    border: 1px dashed var(--blue) !important;
+  }
+  .sub-dept-row:hover {
+    background: #f0f6fa !important;
+    border-color: var(--blue) !important;
+  }
+</style>
+{% endblock %}
