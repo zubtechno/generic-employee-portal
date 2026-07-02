@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}Clearance Tracking | Employee Portal{% endblock %}
+{% block content %}
+<style>
+.track-hero { background:linear-gradient(135deg,#1a237e,#1565c0); color:#fff; padding:24px 32px; border-radius:14px; margin-bottom:28px; }
+.track-hero h1 { margin:0 0 4px; font-size:20px; font-weight:800; }
+.track-hero p { margin:0; font-size:13px; opacity:.8; }
+.track-tabs { display:flex; gap:0; margin-bottom:20px; border:1.5px solid var(--line); border-radius:10px; overflow:hidden; }
+.track-tab { padding:10px 24px; font-size:13px; font-weight:700; cursor:pointer; border:none; background:var(--panel); color:var(--muted); transition:all .15s; flex:1; text-align:center; }
+.track-tab.active { background:var(--blue); color:#fff; }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+.track-table { width:100%; border-collapse:collapse; font-size:13px; }
+.track-table th { padding:10px 14px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); border-bottom:2px solid var(--line); background:var(--panel); }
+.track-table td { padding:12px 14px; border-bottom:1px solid var(--line); vertical-align:middle; }
+.track-table tr:hover td { background:var(--hover); }
+.status-pill { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+.status-pending { background:#fff3cd; color:#856404; }
+.status-in_progress { background:#cce5ff; color:#004085; }
+.status-cleared { background:#d4edda; color:#155724; }
+.status-cancelled { background:#f8d7da; color:#721c24; }
+.chain { display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+.chain-node { display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:5px; }
+.chain-node.done { background:#d4edda; color:#155724; }
+.chain-node.wait { background:#fff3cd; color:#856404; }
+.chain-arrow { color:var(--muted); font-size:11px; }
+.days-badge { display:inline-block; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:700; }
+.days-badge.urgent { background:#f8d7da; color:#721c24; }
+.days-badge.warn { background:#fff3cd; color:#856404; }
+.days-badge.ok { background:#d4edda; color:#155724; }
+details.approval-detail { margin-top:8px; }
+details.approval-detail summary { cursor:pointer; font-size:12px; color:var(--blue); font-weight:700; user-select:none; }
+.approval-record { margin-top:8px; display:flex; flex-direction:column; gap:6px; }
+.approval-record-item { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 14px; font-size:12px; }
+.approval-record-item .approver-name { font-weight:700; margin-bottom:2px; }
+.approval-record-item .approver-meta { color:var(--muted); font-size:11px; }
+.approval-record-item .approver-comment { margin-top:6px; padding:6px 10px; background:rgba(0,0,0,.04); border-radius:5px; font-style:italic; }
+</style>
+
+<div class="track-hero">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h1>📊 Clearance Tracking Dashboard</h1>
+      <p>Full visibility into all employee clearance requests — ongoing and completed.</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <a href="{{ url_for('main.clearance_index') }}" class="secondary-action" style="text-decoration:none;padding:8px 16px;font-size:12px;background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3);">← My View</a>
+      <a href="{{ url_for('main.clearance_config') }}" class="secondary-action" style="text-decoration:none;padding:8px 16px;font-size:12px;background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3);">⚙️ Config</a>
+    </div>
+  </div>
+</div>
+
+<nav class="admin-tabs" style="margin-bottom:20px;">
+  <a href="{{ url_for('main.clearance_index') }}" class="admin-tab">📋 My Clearances</a>
+  <a href="{{ url_for('main.clearance_tracking') }}" class="admin-tab active">📊 Tracking Dashboard</a>
+  <a href="{{ url_for('main.clearance_config') }}" class="admin-tab">⚙️ Configuration</a>
+</nav>
+
+<div id="clearance-tracking-container">
+  <div class="track-tabs">
+    <button class="track-tab active" id="btn-ongoing-tab" onclick="switchTab('ongoing')">🔄 Ongoing Clearances ({{ ongoing|length }})</button>
+    <button class="track-tab" id="btn-completed-tab" onclick="switchTab('completed')">✅ Completed / Cancelled ({{ completed|length }})</button>
+  </div>
+
+  <!-- Ongoing Tab -->
+  <div id="tab-ongoing" class="tab-content active">
+    {% if ongoing %}
+    <div class="table-panel">
+      <table class="track-table">
+        <thead>
+          <tr>
+            <th>Request No.</th>
+            <th>Employee</th>
+            <th>Last Working Date</th>
+            <th>Days Remaining</th>
+            <th>Initiated By</th>
+            <th>Status</th>
+            <th>Approval Chain</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in ongoing %}
+          {% set days_diff = (req.last_working_date - now.date()).days %}
+          <tr>
+            <td><strong style="color:var(--blue);font-family:monospace;font-size:12px;">{{ req.request_no }}</strong></td>
+            <td>
+              <strong>{{ req.employee.full_name }}</strong>
+              <div style="font-size:11px;color:var(--muted);">{{ req.employee.department or '—' }}</div>
+            </td>
+            <td>{{ req.last_working_date.strftime('%d %b %Y') }}</td>
+            <td>
+              {% if days_diff < 0 %}
+              <span class="days-badge urgent">{{ days_diff|abs }} days overdue</span>
+              {% elif days_diff <= 7 %}
+              <span class="days-badge warn">{{ days_diff }} days left</span>
+              {% else %}
+              <span class="days-badge ok">{{ days_diff }} days left</span>
+              {% endif %}
+            </td>
+            <td style="font-size:12px;">{{ req.initiated_by.display_name }}</td>
+            <td><span class="status-pill status-{{ req.status }}">{{ req.status.replace('_',' ').title() }}</span></td>
+            <td>
+              <div class="chain">
+                {% for a in req.approvals %}
+                {% if not loop.first %}<span class="chain-arrow">›</span>{% endif %}
+                <span class="chain-node {{ 'done' if a.status=='cleared' else 'wait' }}">
+                  {{ '✓' if a.status=='cleared' else '⏳' }} {{ a.label or a.approver.display_name }}
+                </span>
+                {% endfor %}
+              </div>
+            </td>
+            <td><a href="{{ url_for('main.clearance_detail', request_id=req.id) }}" style="font-size:12px;font-weight:700;color:var(--blue);">View →</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:48px;color:var(--muted);">
+      <div style="font-size:40px;margin-bottom:12px;">🎉</div>
+      <p style="font-size:14px;">No ongoing clearance requests.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Completed Tab -->
+  <div id="tab-completed" class="tab-content">
+    {% if completed %}
+    <div class="table-panel">
+      <table class="track-table">
+        <thead>
+          <tr>
+            <th>Request No.</th>
+            <th>Employee</th>
+            <th>Last Working Date</th>
+            <th>Status</th>
+            <th>Initiated By</th>
+            <th>Completion</th>
+            <th>Full Approval Record</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in completed %}
+          <tr>
+            <td><strong style="color:var(--blue);font-family:monospace;font-size:12px;">{{ req.request_no }}</strong></td>
+            <td>
+              <strong>{{ req.employee.full_name }}</strong>
+              <div style="font-size:11px;color:var(--muted);">{{ req.employee.department or '—' }}</div>
+            </td>
+            <td>{{ req.last_working_date.strftime('%d %b %Y') }}</td>
+            <td><span class="status-pill status-{{ req.status }}">{{ req.status.replace('_',' ').title() }}</span></td>
+            <td style="font-size:12px;">{{ req.initiated_by.display_name }}</td>
+            <td style="font-size:12px;color:var(--muted);">{{ local_time(req.updated_at).strftime('%d %b %Y') }}</td>
+            <td>
+              {% if req.approvals %}
+              <details class="approval-detail">
+                <summary>View {{ req.approvals|length }} approval(s)</summary>
+                <div class="approval-record">
+                  {% for a in req.approvals %}
+                  <div class="approval-record-item">
+                    <div class="approver-name">
+                      {{ '✅' if a.status=='cleared' else '⏳' }}
+                      {{ a.approver.display_name }}
+                      {% if a.label %}<span style="background:var(--blue-light,#e8f4fd);color:var(--blue);padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px;">{{ a.label }}</span>{% endif %}
+                    </div>
+                    {% if a.cleared_at %}
+                    <div class="approver-meta">Cleared: {{ local_time(a.cleared_at).strftime('%d %b %Y at %I:%M %p') }}</div>
+                    {% else %}
+                    <div class="approver-meta">Status: {{ a.status }}</div>
+                    {% endif %}
+                    {% if a.comment %}
+                    <div class="approver-comment">"{{ a.comment }}"</div>
+                    {% endif %}
+                  </div>
+                  {% endfor %}
+                </div>
+              </details>
+              {% else %}
+              <span style="font-size:12px;color:var(--muted);">No approvals</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:48px;color:var(--muted);">
+      <p style="font-size:14px;">No completed clearance requests yet.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+var activeTab = 'ongoing';
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.track-tab').forEach(el => el.classList.remove('active'));
+  
+  const contentEl = document.getElementById('tab-' + tab);
+  if (contentEl) contentEl.classList.add('active');
+  
+  const btnEl = tab === 'ongoing' ? document.getElementById('btn-ongoing-tab') : document.getElementById('btn-completed-tab');
+  if (btnEl) btnEl.classList.add('active');
+}
+
+function pollClearanceTracking() {
+  fetch(window.location.href)
+    .then(res => res.text())
+    .then(html => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      // Preserve active state elements
+      const targetContainer = doc.getElementById('clearance-tracking-container');
+      if (targetContainer) {
+        document.getElementById('clearance-tracking-container').innerHTML = targetContainer.innerHTML;
+        // Re-apply correct tab classes
+        switchTab(activeTab);
+      }
+    })
+    .catch(err => console.error('Polled tracking update failed:', err));
+}
+// Sync tracking list every 8 seconds
+setInterval(pollClearanceTracking, 8000);
+
+window._now = new Date();
+</script>
+{% endblock %}
