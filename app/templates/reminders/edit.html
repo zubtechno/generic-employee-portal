@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Edit Expiration Reminder | Employee Portal{% endblock %}
+{% block content %}
+<style>
+.rem-form-wrap { max-width: 680px; margin: 0 auto; }
+.rem-form-card { background: var(--panel); border: 1.5px solid var(--line); border-radius: 14px; padding: 28px 32px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-size: 11px; font-weight: 700; margin-bottom: 6px; color: var(--ink); text-transform: uppercase; letter-spacing: .5px; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 1.5px solid var(--line); border-radius: 8px; font-size: 13.5px; background: var(--bg); color: var(--ink); box-sizing: border-box; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--blue); }
+.form-group textarea { resize: vertical; min-height: 80px; }
+.form-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+</style>
+
+<div class="rem-form-wrap">
+  <div style="margin-bottom:24px;">
+    <a href="{{ url_for('main.reminder_detail', reminder_id=reminder.id) }}" style="font-size:12.5px;color:var(--muted);text-decoration:none;">← Back to Detail</a>
+    <h1 style="font-size:22px;font-weight:800;margin:8px 0 4px;">Edit Expiration Reminder</h1>
+    <p style="font-size:13px;color:var(--muted);">Update the license reminder details.</p>
+  </div>
+
+  <div class="rem-form-card">
+    <form method="post" action="{{ url_for('main.reminder_update', reminder_id=reminder.id) }}">
+      {{ csrf_field() }}
+
+      <div class="form-group">
+        <label for="license_name">License / Item Name *</label>
+        <input type="text" name="license_name" id="license_name" value="{{ reminder.license_name }}" required>
+      </div>
+
+      <div class="form-group">
+        <label for="category_id">Item Type / Category</label>
+        <select name="category_id" id="category_id">
+          <option value="">— Select Category —</option>
+          {% for cat in categories %}
+          <option value="{{ cat.id }}" {% if reminder.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="expiry_date">Expiry Date *</label>
+        <input type="date" name="expiry_date" id="expiry_date" value="{{ reminder.expiry_date.strftime('%Y-%m-%d') }}" required>
+      </div>
+
+      <div class="form-group">
+        <label for="stored_location">Stored Location</label>
+        <input type="text" name="stored_location" id="stored_location" value="{{ reminder.stored_location or '' }}">
+      </div>
+
+      <div class="form-group">
+        <label for="system_app_used">System / Application Used</label>
+        <input type="text" name="system_app_used" id="system_app_used" value="{{ reminder.system_app_used or '' }}">
+      </div>
+
+      <div class="form-group">
+        <label for="system_owner">System Owner</label>
+        <input type="text" name="system_owner" id="system_owner" value="{{ reminder.system_owner or '' }}">
+        <p class="form-hint">Matching username/email triggers notifications for this person.</p>
+      </div>
+
+      <div class="form-group">
+        <label for="vendor_info">Vendor Info</label>
+        <textarea name="vendor_info" id="vendor_info">{{ reminder.vendor_info or '' }}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="path_notes">Path / Reference Notes</label>
+        <textarea name="path_notes" id="path_notes">{{ reminder.path_notes or '' }}</textarea>
+      </div>
+
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:28px;">
+        <a href="{{ url_for('main.reminder_detail', reminder_id=reminder.id) }}" class="secondary-action" style="text-decoration:none;padding:10px 20px;">Cancel</a>
+        <button type="submit" class="primary-action" style="padding:10px 28px;">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
