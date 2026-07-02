@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Add Expiration Reminder | Employee Portal{% endblock %}
+{% block content %}
+<style>
+.rem-form-wrap { max-width: 680px; margin: 0 auto; }
+.rem-form-card { background: var(--panel); border: 1.5px solid var(--line); border-radius: 14px; padding: 28px 32px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-size: 11px; font-weight: 700; margin-bottom: 6px; color: var(--ink); text-transform: uppercase; letter-spacing: .5px; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 1.5px solid var(--line); border-radius: 8px; font-size: 13.5px; background: var(--bg); color: var(--ink); box-sizing: border-box; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--blue); }
+.form-group textarea { resize: vertical; min-height: 80px; }
+.form-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.inline-add { display: flex; gap: 8px; align-items: flex-end; }
+</style>
+
+<div class="rem-form-wrap">
+  <div style="margin-bottom:24px;">
+    <a href="{{ url_for('main.reminder_index') }}" style="font-size:12.5px;color:var(--muted);text-decoration:none;">← Back to Reminders</a>
+    <h1 style="font-size:22px;font-weight:800;margin:8px 0 4px;">Add Expiration Reminder</h1>
+    <p style="font-size:13px;color:var(--muted);">Track a new license, domain, or certificate expiration.</p>
+  </div>
+
+  <div class="config-grid" style="display:grid;grid-template-columns:1fr;gap:20px;margin-bottom:24px;">
+    <!-- Manage custom categories inline -->
+    <div class="rem-form-card" style="padding:16px 20px;border-color:var(--line);">
+      <h2 style="font-size:13px;font-weight:800;margin:0 0 10px;">➕ Create New Category Option</h2>
+      <form method="post" action="{{ url_for('main.reminder_category_add') }}" style="display:flex;gap:10px;align-items:center;margin:0;">
+        {{ csrf_field() }}
+        <input type="text" name="name" placeholder="e.g. SSL, Domain, Software Licenses" required style="padding:6px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;flex:1;background:var(--bg);color:var(--ink);">
+        <button type="submit" class="primary-action" style="padding:6px 14px;font-size:12.5px;margin:0;min-height:unset;height:32px;">Create Option</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="rem-form-card">
+    <form method="post" action="{{ url_for('main.reminder_create') }}">
+      {{ csrf_field() }}
+
+      <div class="form-group">
+        <label for="license_name">License / Item Name *</label>
+        <input type="text" name="license_name" id="license_name" placeholder="e.g. SSL Certificate (hris.akashdth.com)" required>
+      </div>
+
+      <div class="form-group">
+        <label for="category_id">Item Type / Category</label>
+        <select name="category_id" id="category_id">
+          <option value="">— Select Category —</option>
+          {% for cat in categories %}
+          <option value="{{ cat.id }}">{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+        <p class="form-hint">Create additional custom types above if needed.</p>
+      </div>
+
+      <div class="form-group">
+        <label for="expiry_date">Expiry Date *</label>
+        <input type="date" name="expiry_date" id="expiry_date" required>
+      </div>
+
+      <div class="form-group">
+        <label for="stored_location">Stored Location</label>
+        <input type="text" name="stored_location" id="stored_location" placeholder="e.g. AkasDTH IT Team - Documents - All Documents">
+      </div>
+
+      <div class="form-group">
+        <label for="system_app_used">System / Application Used</label>
+        <input type="text" name="system_app_used" id="system_app_used" placeholder="e.g. My Akash App (http://myakash.akashdth.com)">
+      </div>
+
+      <div class="form-group">
+        <label for="system_owner">System Owner</label>
+        <input type="text" name="system_owner" id="system_owner" placeholder="e.g. Abdullah Al Zubayer or it@akashdth.com">
+        <p class="form-hint">Matching username/email triggers notifications for this person.</p>
+      </div>
+
+      <div class="form-group">
+        <label for="vendor_info">Vendor Info</label>
+        <textarea name="vendor_info" id="vendor_info" placeholder="e.g. Star Tech & Engineering, contact person: Sifat Sadiq, mob: 01712..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="path_notes">Path / Reference Notes</label>
+        <textarea name="path_notes" id="path_notes" placeholder="Any folder pathways, links, or internal reference IDs..."></textarea>
+      </div>
+
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:28px;">
+        <a href="{{ url_for('main.reminder_index') }}" class="secondary-action" style="text-decoration:none;padding:10px 20px;">Cancel</a>
+        <button type="submit" class="primary-action" style="padding:10px 28px;">Save Reminder</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
