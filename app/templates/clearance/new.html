@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}New Clearance Request | Employee Portal{% endblock %}
+{% block content %}
+<style>
+.clr-form-wrap { max-width: 680px; margin: 0 auto; }
+.clr-form-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 32px 36px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 6px; color: var(--ink); text-transform: uppercase; letter-spacing: .4px; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 1.5px solid var(--line); border-radius: 8px; font-size: 13.5px; background: var(--bg); color: var(--ink); transition: border-color .15s; box-sizing: border-box; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--blue); }
+.form-group textarea { resize: vertical; min-height: 90px; }
+.form-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.info-box { background: #e8f4fd; border: 1.5px solid #b3d7f5; border-radius: 10px; padding: 14px 18px; margin-bottom: 24px; font-size: 12.5px; color: #1a6291; }
+.info-box strong { display: block; margin-bottom: 4px; font-size: 13px; }
+</style>
+
+<div class="clr-form-wrap">
+  <div style="margin-bottom:24px;">
+    <a href="{{ url_for('main.clearance_index') }}" style="font-size:12.5px;color:var(--muted);text-decoration:none;">← Back to Clearances</a>
+    <h1 style="font-size:22px;font-weight:800;margin:8px 0 4px;">New Clearance Request</h1>
+    <p style="font-size:13px;color:var(--muted);">Initiate an employee offboarding clearance process.</p>
+  </div>
+
+  <div class="info-box">
+    <strong>ℹ️ How Clearance Works</strong>
+    All configured clearance approvers will be notified instantly and can submit their clearance in parallel.
+    Reminders are sent at Day 1, 3, 7, 15, 20, 25, and 30 if still pending.
+    Once all approvers clear, the employee's contact will be automatically deactivated on the last working date.
+  </div>
+
+  <div class="clr-form-card">
+    <form method="post" action="{{ url_for('main.clearance_create') }}">
+      {{ csrf_field() }}
+
+      <div class="form-group">
+        <label for="employee_id">Employee *</label>
+        <select name="employee_id" id="employee_id" required>
+          <option value="">— Select Employee —</option>
+          {% for emp in employees %}
+          <option value="{{ emp.id }}">{{ emp.full_name }} ({{ emp.employee_id }}) — {{ emp.department or 'No Dept' }}</option>
+          {% endfor %}
+        </select>
+        <p class="form-hint">Only active employees are listed.</p>
+      </div>
+
+      <div class="form-group">
+        <label for="last_working_date">Last Working Date *</label>
+        <input type="date" name="last_working_date" id="last_working_date" required>
+        <p class="form-hint">The employee's contact will be automatically deactivated on this date once fully cleared.</p>
+      </div>
+
+      <div class="form-group">
+        <label for="notes">Notes / Reason <span style="font-weight:400;text-transform:none;">(optional)</span></label>
+        <textarea name="notes" id="notes" placeholder="Add any relevant context for the approvers…"></textarea>
+      </div>
+
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:28px;">
+        <a href="{{ url_for('main.clearance_index') }}" class="secondary-action" style="text-decoration:none;padding:10px 20px;">Cancel</a>
+        <button type="submit" class="primary-action" style="padding:10px 28px;">Submit Clearance Request →</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
