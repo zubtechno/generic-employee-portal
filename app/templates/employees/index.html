@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}Contact Details | AKASH HRM{% endblock %}
+{% block content %}
+<div class="directory-layout">
+  <!-- Left column: Main content -->
+  <main class="directory-main">
+    <section class="toolbar-band" style="display: flex; flex-direction: column; gap: 12px; padding: 12px 18px; margin-bottom: 14px;">
+      <!-- Row 1: Header Info & View Mode Toggle -->
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+          <h1 style="font-size: 18px; margin: 0; font-weight: 800; letter-spacing: -0.2px;">Contact Details</h1>
+          <span style="font-size: 11.5px; color: var(--muted); font-weight: 500;">
+            {{ employees|length }} shown · 
+            <span style="color: var(--blue); font-weight: 700;">{{ total_active }}</span> active
+            {% if current_user.is_admin or current_user.is_directory_admin %}
+            · <span style="color: var(--red); font-weight: 700;">{{ total_inactive }}</span> inactive
+            {% endif %}
+          </span>
+        </div>
+        
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <div class="view-toggles" style="display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--panel); height: 30px;">
+            <a href="{{ url_for('main.employee_index', q=query_text, department=department, view='grid') }}" class="icon-button" style="padding: 0 8px; border: none; border-radius: 0; height: 30px; min-height: auto; display: flex; align-items: center; justify-content: center; background: {% if view_mode == 'grid' %}var(--blue){% else %}transparent{% endif %}; color: {% if view_mode == 'grid' %}#fff{% else %}var(--muted){% endif %};" title="Grid View">
+              <span data-lucide="layout-grid" style="width:14px; height:14px;"></span>
+            </a>
+            <a href="{{ url_for('main.employee_index', q=query_text, department=department, view='list') }}" class="icon-button" style="padding: 0 8px; border: none; border-radius: 0; height: 30px; min-height: auto; display: flex; align-items: center; justify-content: center; background: {% if view_mode == 'list' %}var(--blue){% else %}transparent{% endif %}; color: {% if view_mode == 'list' %}#fff{% else %}var(--muted){% endif %};" title="List/Detailed View">
+              <span data-lucide="layout-list" style="width:14px; height:14px;"></span>
+            </a>
+          </div>
+          {% if current_user.is_admin or current_user.is_directory_admin %}
+          <a class="primary-action" href="{{ url_for('main.employee_new') }}" style="height: 30px; min-height: auto; padding: 0 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px;">
+            <span data-lucide="user-plus" style="width:14px; height:14px;"></span>
+            <span>Add Employee</span>
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Row 2: Search Form inline -->
+      <form method="get" action="{{ url_for('main.employee_index') }}" style="display: flex; gap: 8px; align-items: center; width: 100%; margin: 0;">
+        <div class="search-field" style="flex: 1; height: 32px; min-height: auto; border-radius: 6px; display: flex; align-items: center; border: 1px solid var(--line); background: var(--panel);">
+          <span data-lucide="search" style="width:14px; height:14px; color: var(--muted); flex-shrink: 0; left: 10px;"></span>
+          <input name="q" type="search" value="{{ query_text }}" placeholder="Search name, ID, email, phone, team, blood group..." autocomplete="off" style="font-size: 12px; border: none; background: transparent; color: var(--ink); width: 100%; outline: none; padding-left: 32px; height: 100%;">
+        </div>
+        {% if current_user.is_admin or current_user.is_directory_admin %}
+        <label class="check-row compact" style="margin: 0; font-size: 12px; gap: 6px; cursor: pointer; flex-shrink: 0; display: inline-flex; align-items: center;">
+          <input type="checkbox" name="inactive" value="1" {% if include_inactive %}checked{% endif %} style="width: 14px; height: 14px; margin: 0;">
+          <span>Show Inactive</span>
+        </label>
+        {% endif %}
+        <input type="hidden" name="department" value="{{ department }}">
+        <button class="secondary-action" type="submit" style="height: 32px; min-height: auto; padding: 0 12px; font-size: 12px; border-radius: 6px; cursor: pointer; flex-shrink: 0;">Search</button>
+      </form>
+    </section>
+
+    <section class="{% if view_mode == 'list' %}employee-list-container{% else %}employee-grid{% endif %}" aria-label="Employees">
+      {% if view_mode == 'list' %}
+        {% for group in grouped_employees %}
+          <div class="dept-section" style="margin-bottom: 28px; width: 100%;">
+            <div class="dept-header-bar">
+              <span>{{ group.name }}</span>
+              <span class="dept-header-count">({{ group.count }})</span>
+            </div>
+            
+            <div class="list-table-wrapper" style="overflow-x: auto; border: 1px solid var(--line); border-radius: 0 0 8px 8px; border-top: none; width: 100%;">
+              <table class="list-table" style="width: 100%; border-collapse: collapse; min-width: 900px; background: var(--panel);">
+                <thead>
+                  <tr style="background: #e20613; color: #fff; text-align: left; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid var(--line);">
+                    {% if current_user.is_admin %}
+                    <th style="padding: 10px; width: 40px; text-align: center;">SN</th>
+                    {% endif %}
+                    <th style="padding: 10px; width: 100px;">Photo</th>
+                    <th style="padding: 10px; width: 180px;">Employee Details</th>
+                    <th style="padding: 10px; width: 180px;">Designation</th>
+                    <th style="padding: 10px; width: 180px;">Contact Details</th>
+                    {% if current_user.is_admin %}
+                    <th style="padding: 10px; width: 100px; text-align: center;">Actions</th>
+                    {% endif %}
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for employee in group.employees %}
+                  <tr class="{% if not employee.is_active %}muted{% endif %}" style="border-bottom: 1px solid var(--line); font-size: 13px; color: var(--ink); vertical-align: top; background: var(--page);">
+                    {% if current_user.is_admin %}
+                    <td style="padding: 12px; text-align: center; font-weight: 700; color: var(--muted); border-right: 1px solid var(--line); background: var(--page);">
+                      {{ loop.index }}
+                    </td>
+                    {% endif %}
+                    <td style="padding: 12px; border-right: 1px solid var(--line); background: var(--page);">
+                      <a href="{{ url_for('main.employee_detail', employee_id=employee.employee_id) }}" style="display: block; width: 80px; height: 80px; border-radius: 6px; overflow: hidden; background: var(--panel); border: 1px solid var(--line);">
+                        <img src="{{ url_for('static', filename=employee|photo_path) }}" alt="{{ employee.full_name }}" style="width: 100%; height: 100%; object-fit: cover; object-position: top center;">
+                      </a>
+                    </td>
+                    <td style="padding: 12px; border-right: 1px solid var(--line); background: var(--page);">
+                      <div style="display: grid; gap: 4px;">
+                        <a href="{{ url_for('main.employee_detail', employee_id=employee.employee_id) }}" style="font-weight: 800; color: var(--blue);">{{ employee.full_name }}</a>
+                        <span style="font-size: 12px; color: var(--muted);">{{ employee.preferred_name or "-" }}</span>
+                        <span style="font-size: 12px; color: var(--ink);">Blood Group: {{ employee.blood_group or "-" }}</span>
+                        <span style="font-size: 11px; font-weight: 700; color: var(--blue);">Emp. ID: {{ employee.employee_id }}</span>
+                      </div>
+                    </td>
+                    <td style="padding: 12px; border-right: 1px solid var(--line); font-weight: 600; color: var(--ink); background: var(--page);">
+                      {{ employee.designation or "-" }}
+                    </td>
+                    <td style="padding: 12px; border-right: 1px solid var(--line); background: var(--page);">
+                      <div style="display: grid; gap: 4px; font-size: 12px;">
+                        <span style="font-weight: 600; color: var(--muted);">{{ employee.phone or "-" }}</span>
+                        <span style="font-weight: 600; color: var(--ink);">PABX: {{ employee.extension or "-" }}</span>
+                        <a href="mailto:{{ employee.email or '' }}" style="color: var(--blue);">{{ employee.email or "-" }}</a>
+                      </div>
+                    </td>
+                    {% if current_user.is_admin %}
+                    <td style="padding: 12px; text-align: center; background: var(--page);">
+                      <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                        <a class="icon-action" href="{{ url_for('main.employee_edit', employee_id=employee.employee_id) }}" title="Edit" style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--blue); cursor: pointer;">
+                          <span data-lucide="pencil" style="width:14px; height:14px;"></span>
+                        </a>
+                        <form method="post" action="{{ url_for('main.employee_toggle_active', employee_id=employee.employee_id) }}" style="display:inline;">
+                          {{ csrf_field() }}
+                          <button type="submit" class="icon-action btn-link" title="{{ 'Deactivate' if employee.is_active else 'Activate' }}" style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); cursor: pointer; padding: 0;">
+                            <span data-lucide="{{ 'user-minus' if employee.is_active else 'user-check' }}" style="width:14px; height:14px;"></span>
+                          </button>
+                        </form>
+                        <form method="post" action="{{ url_for('main.employee_delete', employee_id=employee.employee_id) }}" onsubmit="return confirm('Are you sure you want to delete employee {{ employee.full_name }}?');" style="display:inline;">
+                          {{ csrf_field() }}
+                          <button type="submit" class="icon-action btn-link" title="Delete" style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--red); cursor: pointer; padding: 0;">
+                            <span data-lucide="trash-2" style="width:14px; height:14px;"></span>
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                    {% endif %}
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <!-- Grid View (standard card) -->
+        {% for employee in employees %}
+        <article class="employee-card {% if not employee.is_active %}muted{% endif %}">
+          <a class="portrait" href="{{ url_for('main.employee_detail', employee_id=employee.employee_id) }}">
+            <img src="{{ url_for('static', filename=employee|photo_path) }}" alt="{{ employee.full_name }}">
+          </a>
+          <div class="employee-card-body">
+            <div class="card-title-row">
+              <div>
+                <h2>{{ employee.full_name }}</h2>
+                <p>{{ employee.designation or "Designation pending" }}</p>
+              </div>
+              <span class="id-pill">{{ employee.employee_id }}</span>
+            </div>
+            <dl class="mini-details">
+              <div><dt>Team</dt><dd>{{ employee.department or "Unassigned" }}</dd></div>
+              <div><dt>Phone</dt><dd>{{ employee.phone or "-" }}</dd></div>
+              <div><dt>Email</dt><dd>{{ employee.email or "-" }}</dd></div>
+            </dl>
+            <div class="card-actions">
+              <a class="text-action" href="{{ url_for('main.employee_detail', employee_id=employee.employee_id) }}">View</a>
+              {% if current_user.is_admin %}
+              <a class="text-action" href="{{ url_for('main.employee_edit', employee_id=employee.employee_id) }}">Edit</a>
+              <form method="post" action="{{ url_for('main.employee_delete', employee_id=employee.employee_id) }}" onsubmit="return confirm('Are you sure you want to delete employee {{ employee.full_name }}?');" style="display:inline;">
+                {{ csrf_field() }}
+                <button type="submit" class="text-action btn-link" style="color: var(--red); background: none; border: none; padding: 0; cursor: pointer; font: inherit;">Delete</button>
+              </form>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+        {% else %}
+        <div class="empty-state">
+          <h2>No employees found</h2>
+        </div>
+        {% endfor %}
+      {% endif %}
+    </section>
+  </main>
+
+  <!-- Right column: Sidebar -->
+  <aside class="directory-sidebar">
+    <div class="sidebar-header">
+      <h2>Departments</h2>
+      <a class="clear-filter {% if not department %}hidden{% endif %}" href="{{ url_for('main.employee_index', q=query_text) }}">Clear Filter</a>
+    </div>
+    
+    <div class="dept-tree">
+      <div class="dept-node main-node {% if not department %}active{% endif %}">
+        <a href="{{ url_for('main.employee_index', q=query_text) }}">
+          <span class="dept-name">All Employees</span>
+          <span class="dept-count">{{ total_active }}</span>
+        </a>
+      </div>
+      
+      {% for main_dept in hierarchical_departments %}
+        <div class="dept-group">
+          <div class="dept-node main-node {% if main_dept.name == department %}active{% endif %}">
+            <a href="{{ url_for('main.employee_index', q=query_text, department=main_dept.name) }}">
+              <span class="dept-name">{{ main_dept.name }}</span>
+              <span class="dept-count">{{ main_dept.total_count }}</span>
+            </a>
+          </div>
+          
+          {% if main_dept.subs %}
+            <div class="dept-subs">
+              {% for sub in main_dept.subs %}
+                <div class="dept-node sub-node {% if sub.name == department %}active{% endif %}">
+                  <a href="{{ url_for('main.employee_index', q=query_text, department=sub.name) }}">
+                    <span class="dept-name">{{ sub.name }}</span>
+                    <span class="dept-count">{{ sub.count }}</span>
+                  </a>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </aside>
+</div>
+{% endblock %}
