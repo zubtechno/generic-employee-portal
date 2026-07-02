@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Clearance Requests | Employee Portal{% endblock %}
+{% block content %}
+<style>
+.clr-hero { background: linear-gradient(135deg, #1a237e 0%, #283593 50%, #1565c0 100%); color: #fff; padding: 28px 36px; border-radius: 14px; margin-bottom: 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.clr-hero h1 { margin: 0; font-size: 22px; font-weight: 800; }
+.clr-hero p { margin: 4px 0 0; font-size: 13px; color: #f1f5f9; }
+.clr-stat { background: rgba(255,255,255,.12); border-radius: 10px; padding: 14px 22px; text-align: center; min-width: 90px; }
+.clr-stat strong { display: block; font-size: 26px; font-weight: 800; }
+.clr-stat span { font-size: 11px; opacity: .8; text-transform: uppercase; letter-spacing: .5px; }
+.clr-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid var(--line); padding-bottom: 0; }
+.clr-tab { padding: 8px 18px; font-size: 13px; font-weight: 700; color: var(--muted); border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: color .15s, border-color .15s; }
+.clr-tab.active, .clr-tab:hover { color: var(--blue); border-bottom-color: var(--blue); }
+.clr-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.clr-table th { padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); border-bottom: 2px solid var(--line); background: var(--panel); }
+.clr-table td { padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.clr-table tr:hover td { background: var(--hover); }
+.status-pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
+.status-pending { background: #fff3cd; color: #856404; }
+.status-in_progress { background: #cce5ff; color: #004085; }
+.status-cleared { background: #d4edda; color: #155724; }
+.status-cancelled { background: #f8d7da; color: #721c24; }
+.progress-chain { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.progress-node { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+.progress-node.done { background: #d4edda; color: #155724; }
+.progress-node.wait { background: #fff3cd; color: #856404; }
+.progress-arrow { color: var(--muted); font-size: 12px; }
+.pending-approval-card { background: var(--panel); border: 2px solid var(--amber, #f59e0b); border-radius: 12px; padding: 18px 22px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.pending-approval-card .info strong { display: block; font-size: 14px; margin-bottom: 2px; }
+.pending-approval-card .info span { font-size: 12px; color: var(--muted); }
+</style>
+
+<div id="clearance-index-container">
+  <div class="clr-hero">
+    <div>
+      <h1>📋 Technology Clearance</h1>
+      <p>Manage employee offboarding clearance requests</p>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <div class="clr-stat"><strong>{{ stats_total }}</strong><span>Total</span></div>
+      <div class="clr-stat"><strong>{{ stats_active }}</strong><span>Active</span></div>
+      <div class="clr-stat"><strong>{{ stats_done }}</strong><span>Cleared</span></div>
+      {% if can_initiate %}
+      <a href="{{ url_for('main.clearance_new') }}" class="primary-action" style="text-decoration:none;padding:10px 18px;">+ New Clearance</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if current_user.is_admin or current_user.is_clearance_admin %}
+  <nav class="admin-tabs" style="margin-bottom:20px;">
+    <a href="{{ url_for('main.clearance_index') }}" class="admin-tab active">📋 My Clearances</a>
+    <a href="{{ url_for('main.clearance_tracking') }}" class="admin-tab">📊 Tracking Dashboard</a>
+    <a href="{{ url_for('main.clearance_config') }}" class="admin-tab">⚙️ Configuration</a>
+  </nav>
+  {% endif %}
+
+  {% if my_approvals %}
+  <section style="margin-bottom:28px;">
+    <h2 style="font-size:15px;font-weight:800;margin:0 0 12px;">⏳ Awaiting Your Approval ({{ my_approvals|length }})</h2>
+    {% for approval in my_approvals %}
+    <div class="pending-approval-card">
+      <div class="info">
+        <strong>{{ approval.request.employee.full_name }}</strong>
+        <span>{{ approval.request.request_no }} · Last Working Date: {{ approval.request.last_working_date.strftime('%d %b %Y') }} · Initiated by {{ approval.request.initiated_by.display_name }}</span>
+      </div>
+      <a href="{{ url_for('main.clearance_detail', request_id=approval.request_id) }}" class="primary-action" style="text-decoration:none;padding:8px 16px;font-size:12px;">Review & Clear →</a>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  {% if my_requests %}
+  <div class="table-panel">
+    <table class="clr-table">
+      <thead>
+        <tr>
+          <th>Request No.</th>
+          <th>Employee</th>
+          <th>Last Working Date</th>
+          <th>Status</th>
+          <th>Approval Progress</th>
+          <th>Submitted</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in my_requests %}
+        <tr>
+          <td><strong style="color:var(--blue);font-family:monospace;">{{ req.request_no }}</strong></td>
+          <td>
+            <strong>{{ req.employee.full_name }}</strong>
+            <div style="font-size:11px;color:var(--muted);">{{ req.employee.department or '—' }}</div>
+          </td>
+          <td>{{ req.last_working_date.strftime('%d %b %Y') }}</td>
+          <td><span class="status-pill status-{{ req.status }}">{{ req.status.replace('_',' ').title() }}</span></td>
+          <td>
+            {% if req.approvals %}
+            <div class="progress-chain">
+              {% for a in req.approvals %}
+              {% if not loop.first %}<span class="progress-arrow">›</span>{% endif %}
+              <span class="progress-node {{ 'done' if a.status=='cleared' else 'wait' }}">
+                {{ '✓' if a.status=='cleared' else '⏳' }} {{ a.label or a.approver.display_name }}
+              </span>
+              {% endfor %}
+            </div>
+            {% else %}
+            <span style="font-size:12px;color:var(--muted);">No approvers configured</span>
+            {% endif %}
+          </td>
+          <td style="font-size:12px;color:var(--muted);">{{ local_time(req.created_at).strftime('%d %b %Y') }}</td>
+          <td><a href="{{ url_for('main.clearance_detail', request_id=req.id) }}" style="font-size:12px;font-weight:700;color:var(--blue);">View →</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted);">No clearance requests yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:60px 20px;color:var(--muted);">
+    <div style="font-size:48px;margin-bottom:16px;">📋</div>
+    <h2 style="font-size:18px;margin-bottom:8px;">No clearance requests</h2>
+    <p style="font-size:13px;">{% if can_initiate %}Click "New Clearance" above to initiate one.{% else %}You have no clearance requests or approvals assigned.{% endif %}</p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  function pollClearanceIndex() {
+    fetch(window.location.href)
+      .then(res => res.text())
+      .then(html => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const container = doc.getElementById('clearance-index-container');
+        if (container) {
+          document.getElementById('clearance-index-container').innerHTML = container.innerHTML;
+        }
+      })
+      .catch(err => console.error('Polled clearance updates failed:', err));
+  }
+  // Check and update clearance list every 8 seconds
+  setInterval(pollClearanceIndex, 8000);
+</script>
+{% endblock %}
