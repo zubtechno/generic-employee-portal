@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% set is_new = mode == "new" %}
+{% block title %}{{ "Add Employee" if is_new else "Edit Employee" }} | AKASH HRM{% endblock %}
+{% block content %}
+{% if is_new and current_user.is_any_admin %}
+<nav class="admin-tabs" style="margin-bottom: 24px;">
+  {% if current_user.is_admin or current_user.is_service_admin %}
+  <a href="{{ url_for('main.settings_index') }}" class="admin-tab">⚙️ Settings & Branding</a>
+  {% endif %}
+  {% if current_user.is_admin or current_user.is_directory_admin %}
+  <a href="{{ url_for('main.employee_new') }}" class="admin-tab active">👤 Add Employee</a>
+  {% endif %}
+  {% if current_user.is_admin %}
+  <a href="{{ url_for('main.user_index') }}" class="admin-tab">👥 Users Management</a>
+  {% endif %}
+  {% if current_user.is_admin or current_user.is_directory_admin %}
+  <a href="{{ url_for('main.department_index') }}" class="admin-tab">🏢 Departments Management</a>
+  {% endif %}
+  {% if current_user.is_admin or current_user.is_audit_admin %}
+  <a href="{{ url_for('main.audit_log') }}" class="admin-tab">📜 Audit Logs</a>
+  {% endif %}
+</nav>
+{% endif %}
+
+<section class="form-shell">
+  <div class="section-heading">
+    <div>
+      <h1>{{ "Add Employee" if is_new else "Edit Employee" }}</h1>
+      <p>{{ employee.full_name or "New employee record" }}</p>
+    </div>
+  </div>
+
+  <form class="employee-form" method="post" enctype="multipart/form-data" action="{{ url_for('main.employee_create') if is_new else url_for('main.employee_update', employee_id=employee.employee_id) }}">
+    {{ csrf_field() }}
+    <label>
+      Employee ID
+      <input name="employee_id" value="{{ employee.employee_id or '' }}" placeholder="10***" required>
+    </label>
+    <label>
+      Departmental Serial
+      <input name="serial_no" type="number" value="{{ employee.serial_no or 999 }}" required>
+    </label>
+    <label>
+      Full Name
+      <input name="full_name" value="{{ employee.full_name or '' }}" required>
+    </label>
+    <label>
+      Preferred Name
+      <input name="preferred_name" value="{{ employee.preferred_name or '' }}">
+    </label>
+    <label>
+      Email
+      <input name="email" type="email" value="{{ employee.email or '' }}" placeholder="abc@akashdth.com">
+    </label>
+    <label>
+      Phone
+      <input name="phone" value="{{ employee.phone or '' }}" placeholder="+88 017********">
+    </label>
+    <label>
+      Extension
+      <input name="extension" value="{{ employee.extension or '' }}" placeholder="18***">
+    </label>
+    <label>
+      Department
+      <select name="department" style="min-height: 42px; padding: 10px 12px; background: #fff;">
+        <option value="">-- Select Department --</option>
+        {% for dept in departments %}
+          <option value="{{ dept.name }}" {% if employee.department == dept.name %}selected{% endif %}>
+            {% if dept.parent_id %}&nbsp;&nbsp;&nbsp;&nbsp;{{ dept.name }}{% else %}{{ dept.name }}{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Designation
+      <input name="designation" value="{{ employee.designation or '' }}">
+    </label>
+    <label>
+      Blood Group
+      <select name="blood_group" style="min-height: 42px; padding: 10px 12px; background: #fff;">
+        <option value="">-- Select Blood Group --</option>
+        {% for bg in ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"] %}
+          <option value="{{ bg }}" {% if employee.blood_group == bg %}selected{% endif %}>{{ bg }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="wide">
+      Did you know
+      <textarea name="fun_fact" rows="4">{{ employee.fun_fact or '' }}</textarea>
+    </label>
+    <label class="wide file-field form-file">
+      <span data-lucide="image-up"></span>
+      <span>{{ "Add Photo" if is_new else "Replace Photo" }}</span>
+      <input name="photo" type="file" accept="image/*">
+    </label>
+    <label class="check-row wide">
+      <input type="checkbox" name="is_active" {% if employee.is_active %}checked{% endif %}>
+      <span>Active employee</span>
+    </label>
+    <div class="form-actions wide">
+      <button class="primary-action" type="submit">
+        <span data-lucide="save"></span>
+        <span>Save</span>
+      </button>
+      <a class="secondary-action" href="{{ url_for('main.employee_index') }}">Cancel</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
