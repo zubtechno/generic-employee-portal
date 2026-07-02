@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ employee.full_name }} | AKASH HRM{% endblock %}
+{% block content %}
+<section class="detail-layout">
+  <aside class="profile-panel">
+    <img class="profile-photo" src="{{ url_for('static', filename=employee|photo_path) }}" alt="{{ employee.full_name }}">
+    <h1>{{ employee.full_name }}</h1>
+    <p>{{ employee.designation or "Designation pending" }}</p>
+    <span class="id-pill large">{{ employee.employee_id }}</span>
+
+    <div class="profile-vcard-qr" style="margin-top: 24px; text-align: center;">
+      <p style="font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">Scan to Save Contact</p>
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=130x130&data={{ employee.vcard_data() }}" alt="vCard QR Code" style="border: 1px solid var(--line); padding: 4px; border-radius: 6px; background: var(--panel); width: 130px; height: 130px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+    </div>
+
+    {% if can_update_photo %}
+    <form class="photo-form" method="post" enctype="multipart/form-data" action="{{ url_for('main.employee_photo', employee_id=employee.employee_id) }}">
+      {{ csrf_field() }}
+      <label class="file-field">
+        <span data-lucide="image-up"></span>
+        <span>Update Photo</span>
+        <input name="photo" type="file" accept="image/*" required>
+      </label>
+      <button class="secondary-action wide" type="submit">Save Photo</button>
+    </form>
+    {% endif %}
+
+    <!-- Support Ticket Stats (visible only to the user themselves or admins) -->
+    {% if is_own_profile or current_user.is_admin %}
+    <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); text-align: left;">
+      <h3 style="font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">🎫 Support Ticket Statistics</h3>
+      <div style="display: grid; grid-template-columns: {% if current_user.is_admin %}1fr 1fr{% else %}1fr{% endif %}; gap: 10px;">
+        <div style="background: var(--page); border: 1px solid var(--line); border-radius: 8px; padding: 12px 10px; text-align: center;">
+          <span style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 2px;">Created</span>
+          <strong style="font-size: 18px; color: var(--blue);">{{ tickets_created }}</strong>
+        </div>
+        {% if current_user.is_admin %}
+        <div style="background: var(--page); border: 1px solid var(--line); border-radius: 8px; padding: 12px 10px; text-align: center;">
+          <span style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 2px;">Closed</span>
+          <strong style="font-size: 18px; color: #15803d;">{{ tickets_closed }}</strong>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </aside>
+
+  <section class="detail-content">
+    <div class="section-heading">
+      <h2>Profile</h2>
+      <div class="action-row">
+        {% if current_user.is_admin %}
+        <a class="primary-action" href="{{ url_for('main.employee_edit', employee_id=employee.employee_id) }}">
+          <span data-lucide="pencil"></span>
+          <span>Edit</span>
+        </a>
+        <form method="post" action="{{ url_for('main.employee_toggle_active', employee_id=employee.employee_id) }}">
+          {{ csrf_field() }}
+          <button class="secondary-action" type="submit">{{ "Deactivate" if employee.is_active else "Activate" }}</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <dl class="detail-grid">
+      <div><dt>Preferred Name</dt><dd>{{ employee.preferred_name or "-" }}</dd></div>
+      <div><dt>Department</dt><dd>{{ employee.department or "-" }}</dd></div>
+      <div><dt>Blood Group</dt><dd>{{ employee.blood_group or "-" }}</dd></div>
+      <div><dt>Mobile</dt><dd>{{ employee.phone or "-" }}</dd></div>
+      <div><dt>Extension</dt><dd>{{ employee.extension or "-" }}</dd></div>
+      <div class="wide"><dt>Email</dt><dd>{{ employee.email or "-" }}</dd></div>
+      <div class="wide"><dt>Did you know</dt><dd>{{ employee.fun_fact or "-" }}</dd></div>
+    </dl>
+  </section>
+</section>
+{% endblock %}
