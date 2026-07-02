@@ -1,0 +1,9 @@
+.git
+.venv
+__pycache__/
+*.pyc
+data/*.sqlite
+data/*.sqlite-*
+.env
+.agents
+.codex
