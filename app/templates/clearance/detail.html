@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}{{ req.request_no }} | Clearance Detail | AKASH Employee Portal{% endblock %}
+{% block content %}
+<style>
+.detail-header { background: linear-gradient(135deg,#1a237e,#1565c0); color:#fff; border-radius:14px; padding:28px 36px; margin-bottom:28px; }
+.detail-header h1 { margin:0 0 4px; font-size:20px; font-weight:800; }
+.detail-header p { margin:0; font-size:13px; opacity:.8; }
+.status-pill { display:inline-block; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+.status-pending { background:rgba(255,255,255,.2); color:#fff; border:1.5px solid rgba(255,255,255,.4); }
+.status-in_progress { background:rgba(255,255,255,.2); color:#fff; border:1.5px solid rgba(255,255,255,.4); }
+.status-cleared { background:#28a745; color:#fff; }
+.status-cancelled { background:#dc3545; color:#fff; }
+.info-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:28px; }
+.info-card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px 20px; }
+.info-card label { font-size:11px; font-weight:700; text-transform:uppercase; color:var(--muted); letter-spacing:.4px; display:block; margin-bottom:4px; }
+.info-card strong { font-size:14px; color:var(--ink); }
+.approval-timeline { display:flex; flex-direction:column; gap:12px; margin-bottom:28px; }
+.approval-item { background:var(--panel); border:1.5px solid var(--line); border-radius:12px; padding:18px 22px; display:flex; align-items:flex-start; gap:16px; }
+.approval-item.cleared-item { border-color:#28a745; background:#f0faf2; }
+.approval-item.pending-item { border-color:var(--amber,#f59e0b); }
+.approval-icon { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.approval-icon.cleared-icon { background:#d4edda; }
+.approval-icon.pending-icon { background:#fff3cd; }
+.approval-body { flex:1; }
+.approval-body .name { font-size:14px; font-weight:700; margin:0 0 2px; }
+.approval-body .label-tag { display:inline-block; background:var(--blue-light,#e8f4fd); color:var(--blue); padding:2px 8px; border-radius:6px; font-size:11px; font-weight:700; margin-bottom:6px; }
+.approval-body .comment { font-size: 13px; color: var(--ink); background: rgba(0,0,0,.04); padding: 8px 12px; border-radius: 6px; margin-top: 6px; font-style: italic; }
+[data-theme="dark"] .approval-body .comment { background: rgba(255,255,255,.05); border: 1px solid var(--line); color: var(--ink); }
+[data-theme="dark"] .approval-item.cleared-item { background: rgba(40,167,69,.1); border-color: #28a745; }
+.approval-body .meta { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+.approve-form-card { background:var(--panel); border:2px solid var(--blue); border-radius:14px; padding:24px 28px; margin-bottom:28px; }
+.approve-form-card h2 { font-size:15px; font-weight:800; margin:0 0 16px; color:var(--blue); }
+.approve-form-card textarea { width:100%; padding:10px 14px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; background:var(--bg); color:var(--ink); resize:vertical; min-height:80px; box-sizing:border-box; }
+.approve-form-card textarea:focus { outline:none; border-color:var(--blue); }
+</style>
+
+<div style="margin-bottom:20px;">
+  <a href="{{ url_for('main.clearance_index') }}" style="font-size:12.5px;color:var(--muted);text-decoration:none;">← Back to Clearances</a>
+</div>
+
+<div class="detail-header">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h1>📋 {{ req.request_no }}</h1>
+      <p>Clearance for <strong style="color:#fff;">{{ req.employee.full_name }}</strong> ({{ req.employee.employee_id }}) · {{ req.employee.department or '—' }}</p>
+    </div>
+    <span class="status-pill status-{{ req.status }}">{{ req.status.replace('_',' ').title() }}</span>
+  </div>
+</div>
+
+<!-- Info Grid -->
+<div class="info-grid">
+  <div class="info-card">
+    <label>Last Working Date</label>
+    <strong>{{ req.last_working_date.strftime('%d %B %Y') }}</strong>
+  </div>
+  <div class="info-card">
+    <label>Initiated By</label>
+    <strong>{{ req.initiated_by.display_name }}</strong>
+  </div>
+  <div class="info-card">
+    <label>Date Submitted</label>
+    <strong>{{ local_time(req.created_at).strftime('%d %b %Y, %I:%M %p') }}</strong>
+  </div>
+  <div class="info-card">
+    <label>Approval Progress</label>
+    <strong>{{ req.cleared_approvals|length }} / {{ req.approvals|length }} Cleared</strong>
+  </div>
+  {% if req.notes %}
+  <div class="info-card" style="grid-column:1/-1;">
+    <label>Notes</label>
+    <strong style="font-weight:400;font-size:13px;">{{ req.notes }}</strong>
+  </div>
+  {% endif %}
+</div>
+
+<!-- My Approval Action (if I'm an approver and still pending) -->
+{% if my_approval and my_approval.status == 'pending' %}
+<div class="approve-form-card">
+  <h2>✍️ Your Approval Required</h2>
+  <p style="font-size:13px;color:var(--muted);margin:0 0 14px;">
+    You are listed as: <strong>{{ my_approval.label or 'Approver' }}</strong>. 
+    Add an optional comment and click Clear to submit your approval.
+  </p>
+  <form method="post" action="{{ url_for('main.clearance_approval_clear', approval_id=my_approval.id) }}">
+    {{ csrf_field() }}
+    <textarea name="comment" placeholder="Add your comment (e.g. All equipment returned, accounts deactivated, etc.)…"></textarea>
+    <div style="display:flex;gap:10px;margin-top:12px;">
+      <button type="submit" class="primary-action" style="padding:10px 24px;">✅ Submit My Clearance</button>
+    </div>
+  </form>
+</div>
+{% elif my_approval and my_approval.status == 'cleared' %}
+<div style="background:#d4edda;border:1.5px solid #28a745;border-radius:10px;padding:14px 20px;margin-bottom:24px;font-size:13px;color:#155724;">
+  ✅ You have already submitted your clearance approval on {{ local_time(my_approval.cleared_at).strftime('%d %b %Y at %I:%M %p') }}.
+</div>
+{% endif %}
+
+<!-- Approval Timeline -->
+<h2 style="font-size:16px;font-weight:800;margin:0 0 16px;">Approver Timeline</h2>
+<div class="approval-timeline">
+  {% for approval in req.approvals %}
+  <div class="approval-item {{ 'cleared-item' if approval.status=='cleared' else 'pending-item' }}">
+    <div class="approval-icon {{ 'cleared-icon' if approval.status=='cleared' else 'pending-icon' }}">
+      {{ '✅' if approval.status=='cleared' else '⏳' }}
+    </div>
+    <div class="approval-body">
+      <div class="name">{{ approval.approver.display_name }}</div>
+      {% if approval.label %}
+      <span class="label-tag">{{ approval.label }}</span>
+      {% endif %}
+      {% if approval.status == 'cleared' %}
+        <div class="meta">✅ Cleared on {{ local_time(approval.cleared_at).strftime('%d %b %Y at %I:%M %p') }}</div>
+        {% if approval.comment %}
+        <div class="comment">"{{ approval.comment }}"</div>
+        {% else %}
+        <div class="meta" style="margin-top:6px;font-style:italic;">No comment added.</div>
+        {% endif %}
+      {% else %}
+        <div class="meta">⏳ Awaiting approval</div>
+        {% if approval.days_reminded %}
+        <div class="meta">Reminders sent at day: {{ approval.days_reminded | join(', ') }}</div>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+  {% else %}
+  <p style="color:var(--muted);font-size:13px;">No approvers are configured for this request.</p>
+  {% endfor %}
+</div>
+
+<!-- Cancel Button (initiator or admin) -->
+{% if (is_initiator or is_admin_access) and req.status in ('pending','in_progress') %}
+<div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--line);">
+  <form method="post" action="{{ url_for('main.clearance_cancel', request_id=req.id) }}" onsubmit="return confirm('Cancel this clearance request?');">
+    {{ csrf_field() }}
+    <button type="submit" class="danger-action" style="padding:8px 18px;font-size:12.5px;">🗑 Cancel This Clearance Request</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}
