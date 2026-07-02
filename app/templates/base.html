@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ app_name }}{% endblock %}</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <!-- PWA Settings -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1a237e">
+    <link rel="apple-touch-icon" href="/static/img/icon-192.png">
+    <!-- Apply saved theme before first paint to prevent flash -->
+    <script>if(localStorage.getItem('theme')==='dark')document.documentElement.setAttribute('data-theme','dark');</script>
+  </head>
+  <body>
+    {% if current_user %}
+    <header class="app-header" style="display: flex; flex-direction: column; gap: 8px; min-height: auto; padding: 8px clamp(18px, 4vw, 44px); align-items: stretch;">
+      <!-- Top Row: Brand Info & Header Actions -->
+      <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+        <a class="brand" href="{{ url_for('main.employee_index') }}" style="min-width: auto; gap: 6px;">
+          <img class="header-logo" src="{{ url_for('static', filename=logo_path) }}" alt="{{ app_name }}" style="height: 26px; max-width: 140px; object-fit: contain; margin-right: 2px;">
+          <span style="display: flex; flex-direction: column; line-height: 1.15;">
+            <strong style="font-size: 13.5px; letter-spacing: 0.2px; font-weight: 800;">{{ app_name }}</strong>
+            <small style="font-size: 8px; font-weight: 800; text-transform: uppercase; color: var(--muted);">{{ company_name }}</small>
+          </span>
+        </a>
+
+        <div class="header-actions" style="display: flex; align-items: center; gap: 6px;">
+          <button id="theme-toggle-btn" class="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode" style="width: 34px; height: 34px; border-radius: 6px;">
+            <!-- Sun (shown in dark mode) -->
+            <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+            <!-- Moon (shown in light mode) -->
+            <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+          
+          <!-- Notifications button -->
+          <a href="{{ url_for('main.notifications_index') }}" class="theme-toggle" title="Notifications" style="width: 34px; height: 34px; border-radius: 6px; position: relative;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            {% if unread_notifications_count > 0 %}
+            <span style="position: absolute; top: 1.5px; right: 1.5px; width: 7px; height: 7px; background: var(--red); border-radius: 50%; border: 1.5px solid var(--panel);"></span>
+            {% endif %}
+          </a>
+
+          <!-- Profile button -->
+          <a href="{{ url_for('main.profile') }}" class="theme-toggle" title="My Profile" style="width: 34px; height: 34px; border-radius: 6px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </a>
+
+          <form class="logout-form" method="post" action="{{ url_for('auth.logout') }}" style="margin: 0;">
+            {{ csrf_field() }}
+            <button class="icon-button" type="submit" title="Sign out" style="min-height: 34px; height: 34px; padding: 0 10px; border-radius: 6px; font-size: 12.5px; gap: 6px;">
+              <span data-lucide="log-out" style="width: 14px; height: 14px;"></span>
+              <span>Sign out</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Horizontal Divider -->
+      <div style="height: 1px; background: var(--line); width: 100%; margin: 0;"></div>
+
+      <!-- Bottom Row: Navigation menu bar -->
+      <div style="display: flex; width: 100%;">
+        <nav class="top-nav" aria-label="Main navigation" style="display: flex; gap: 4px; align-items: center; margin: 0; padding: 0;">
+          <a href="{{ url_for('main.employee_index') }}" style="padding: 4px 8px; font-size: 12.5px;">Contact Details</a>
+          {% set svc_enabled = app_settings.get('services_page_enabled', '0') == '1' %}
+          {% set svc_vis = app_settings.get('services_page_visibility', 'all') %}
+          {% if svc_enabled and (svc_vis == 'all' or current_user.is_admin or current_user.is_service_admin) %}
+          <a href="{{ url_for('main.services_index') }}" style="padding: 4px 8px; font-size: 12.5px;">Services</a>
+          {% elif current_user.is_admin or current_user.is_service_admin %}
+          <a href="{{ url_for('main.services_index') }}" style="padding: 4px 8px; font-size: 12.5px; opacity:0.55;" title="Services page (admin only or disabled)">Services</a>
+          {% endif %}
+          <a href="{{ url_for('main.tickets_index') }}" style="padding: 4px 8px; font-size: 12.5px;">Issue Tracker</a>
+          {% if clearance_nav_visible %}
+          <a href="{{ url_for('main.clearance_index') }}" style="padding: 4px 8px; font-size: 12.5px;">Clearance</a>
+          {% endif %}
+          {% if reminder_nav_visible %}
+          <a href="{{ url_for('main.reminder_index') }}" style="padding: 4px 8px; font-size: 12.5px;">Reminders</a>
+          {% endif %}
+          {% if current_user.is_admin %}
+          <a href="{{ url_for('main.settings_index') }}" style="padding: 4px 8px; font-size: 12.5px;">Settings</a>
+          {% endif %}
+        </nav>
+      </div>
+    </header>
+    {% endif %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="flash-stack" role="status">
+        {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endwith %}
+
+    <main class="page-shell">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="app-footer" style="text-align: center; padding: 20px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); margin-top: 40px; background: #fff; width: 100%;">
+      <p>Developed by the <strong>Technology Team</strong>. For suggestions or complaints, email <a href="mailto:support@company.com" style="color: var(--blue); font-weight: 600;">support@company.com</a>.</p>
+    </footer>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% if current_user %}
+    <script>
+      function checkUnreadNotifications() {
+        fetch("{{ url_for('main.api_notifications_unread_count') }}")
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            var count = data.unread_count;
+            var notifBtn = document.querySelector('a[href="{{ url_for("main.notifications_index") }}"]');
+            if (notifBtn) {
+              var badge = notifBtn.querySelector('span');
+              if (count > 0) {
+                if (!badge) {
+                  badge = document.createElement('span');
+                  badge.style.cssText = 'position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; background: var(--red); border-radius: 50%; border: 1.5px solid var(--panel);';
+                  notifBtn.appendChild(badge);
+                }
+              } else {
+                if (badge) badge.remove();
+              }
+            }
+          })
+          .catch(function(err) { console.error('Notification count fetch failed:', err); });
+      }
+      // Poll every 10 seconds for real-time notification badge updates without page reload
+      setInterval(checkUnreadNotifications, 10000);
+    </script>
+    {% endif %}
+    <!-- PWA Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js')
+            .then(function(reg) { console.log('ServiceWorker registration successful with scope: ', reg.scope); })
+            .catch(function(err) { console.error('ServiceWorker registration failed: ', err); });
+        });
+      }
+    </script>
+  </body>
+</html>
