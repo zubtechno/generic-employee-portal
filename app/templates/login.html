@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Sign In | {{ app_name }}{% endblock %}
+{% block content %}
+<section class="login-layout">
+  <div class="login-panel">
+    <div class="login-brand" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+      <img src="{{ url_for('static', filename=logo_path) }}" alt="{{ app_name }}" style="max-height: 54px; max-width: 220px; object-fit: contain;">
+      <div>
+        <h1 style="font-size: 20px; margin-top: 8px;">{{ app_name }}</h1>
+        <p>Employee directory and profile management</p>
+      </div>
+    </div>
+
+    <a class="primary-action wide" href="{{ url_for('auth.start_login') }}">
+      <span data-lucide="shield-check"></span>
+      <span>Continue with AKASH SSO</span>
+    </a>
+
+    {% if not oidc_ready %}
+    <div class="inline-alert">
+      Authentik client settings are missing.
+    </div>
+    {% endif %}
+
+    <div class="local-login-divider">
+      <span>or sign in locally</span>
+    </div>
+
+    <form class="local-login-form" method="post" action="{{ url_for('auth.local_login') }}">
+      {{ csrf_field() }}
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" placeholder="bexcom.admin" required autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" placeholder="••••••••" required autocomplete="current-password">
+      </div>
+      <button class="secondary-action wide" type="submit">Sign In</button>
+    </form>
+  </div>
+</section>
+{% endblock %}
