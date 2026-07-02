@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Audit | AKASH HRM{% endblock %}
+{% block content %}
+<section class="toolbar-band">
+  <div>
+    <h1>Audit Log</h1>
+    <p>Latest 100 changes</p>
+  </div>
+</section>
+
+<nav class="admin-tabs" style="margin-top: 24px; margin-bottom: 24px;">
+  {% if current_user.is_admin or current_user.is_service_admin %}
+  <a href="{{ url_for('main.settings_index') }}" class="admin-tab">⚙️ Settings & Branding</a>
+  {% endif %}
+  {% if current_user.is_admin or current_user.is_directory_admin %}
+  <a href="{{ url_for('main.employee_new') }}" class="admin-tab">👤 Add Employee</a>
+  {% endif %}
+  {% if current_user.is_admin %}
+  <a href="{{ url_for('main.user_index') }}" class="admin-tab">👥 Users Management</a>
+  {% endif %}
+  {% if current_user.is_admin or current_user.is_directory_admin %}
+  <a href="{{ url_for('main.department_index') }}" class="admin-tab">🏢 Departments Management</a>
+  {% endif %}
+  {% if current_user.is_admin or current_user.is_audit_admin %}
+  <a href="{{ url_for('main.audit_log') }}" class="admin-tab active">📜 Audit Logs</a>
+  {% endif %}
+</nav>
+<section class="table-panel">
+  <table class="audit-table">
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Actor</th>
+        <th>Action</th>
+        <th>Employee</th>
+        <th>Details</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td><span style="font-size: 11px; color: var(--muted);">{{ local_time(log.created_at).strftime('%Y-%m-%d %I:%M %p') }}</span></td>
+        <td>{{ log.actor_email or "-" }}</td>
+        <td>{{ log.action }}</td>
+        <td>{{ log.target_employee_id or "-" }}</td>
+        <td>{{ log.details or "-" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
