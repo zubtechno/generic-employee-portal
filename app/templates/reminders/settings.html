@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Threshold Settings | Employee Portal{% endblock %}
+{% block content %}
+<style>
+.settings-wrap { max-width: 600px; margin: 0 auto; }
+.settings-card { background: var(--panel); border: 1.5px solid var(--line); border-radius: 14px; padding: 28px 32px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-size: 11px; font-weight: 700; margin-bottom: 6px; color: var(--ink); text-transform: uppercase; letter-spacing: .5px; }
+.form-group input { width: 100%; padding: 10px 14px; border: 1.5px solid var(--line); border-radius: 8px; font-size: 13.5px; background: var(--bg); color: var(--ink); box-sizing: border-box; }
+.form-group input:focus { outline: none; border-color: var(--blue); }
+.form-hint { font-size: 11.5px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+.info-box { background: #e8f4fd; border: 1.5px solid #b3d7f5; border-radius: 10px; padding: 14px 18px; margin-bottom: 24px; font-size: 12.5px; color: #1a6291; line-height: 1.4; }
+</style>
+
+<div class="settings-wrap">
+  <div style="margin-bottom:24px;">
+    <a href="{{ url_for('main.reminder_index') }}" style="font-size:12.5px;color:var(--muted);text-decoration:none;">← Back to Reminders</a>
+    <h1 style="font-size:22px;font-weight:800;margin:8px 0 4px;">Alert Threshold Settings</h1>
+    <p style="font-size:13px;color:var(--muted);">Configure at how many days prior to expiry notification alerts are sent.</p>
+  </div>
+
+  <div class="info-box">
+    <strong>ℹ️ Alert Notification Rules</strong>
+    When a tracked item hits any of these threshold offsets (e.g. 60 days before expiration), a notification is fired to reminder admins, super admins, and the system owner. Notifications are deduplicated so you only receive one alert per item per threshold.
+  </div>
+
+  <div class="settings-card">
+    <form method="post" action="{{ url_for('main.reminder_settings_save') }}">
+      {{ csrf_field() }}
+
+      <div class="form-group">
+        <label for="days_val">Notification Offsets (Days before expiry)</label>
+        <input type="text" name="days_val" id="days_val" value="{{ days_val }}" placeholder="e.g. 60, 45, 30" required>
+        <p class="form-hint">Provide a comma-separated list of numbers. Example: <code>60, 45, 30</code>. If an item has less than or equal to these days left, an alert is sent.</p>
+      </div>
+
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:28px;">
+        <a href="{{ url_for('main.reminder_index') }}" class="secondary-action" style="text-decoration:none;padding:10px 20px;">Cancel</a>
+        <button type="submit" class="primary-action" style="padding:10px 28px;">Save Settings</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
